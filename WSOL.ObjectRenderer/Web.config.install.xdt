@@ -1,0 +1,19 @@
+﻿<?xml version="1.0"?>
+<configuration xmlns:xdt="http://schemas.microsoft.com/XML-Document-Transform">
+  <appSettings xdt:Transform="InsertIfMissing">
+    <add key="WSOL.ObjectRenderer.Compiled" value="false" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)"/>
+    <add key="WSOL.ObjectRenderer.EnableFileWatcher" value="false" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)"/>
+    <add key="WSOL.ObjectRenderer.ViewsPath" value="~/Views" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)"/>
+  </appSettings>
+  <system.web xdt:Transform="InsertIfMissing">
+    <pages xdt:Transform="InsertIfMissing">
+      <namespaces xdt:Transform="InsertIfMissing">
+        <add namespace="WSOL.ObjectRenderer" xdt:Transform="InsertIfMissing" xdt:Locator="Match(namespace)"/>
+        <add namespace="WSOL.ObjectRenderer.Extensions" xdt:Transform="InsertIfMissing" xdt:Locator="Match(namespace)"/>
+      </namespaces>
+      <controls xdt:Transform="InsertIfMissing">
+        <add tagPrefix="WSOL" namespace="WSOL.ObjectRenderer.WebControls" assembly="WSOL.ObjectRenderer" xdt:Transform="InsertIfMissing" xdt:Locator="Match(namespace)"/>
+      </controls>
+    </pages>
+  </system.web>  
+</configuration>

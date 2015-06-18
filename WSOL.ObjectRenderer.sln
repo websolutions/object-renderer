@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WSOL.ObjectRenderer", "WSOL.ObjectRenderer\WSOL.ObjectRenderer.csproj", "{2ECFA527-241C-4694-A62F-08320A47922E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{6DDB237D-24A6-4A5B-BDBB-91940AAFA8BE}"
+	ProjectSection(SolutionItems) = preProject
+		Build.proj = Build.proj
+		.build\MSBuild.Community.Tasks.dll = .build\MSBuild.Community.Tasks.dll
+		.build\MSBuild.Community.Tasks.targets = .build\MSBuild.Community.Tasks.targets
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2ECFA527-241C-4694-A62F-08320A47922E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2ECFA527-241C-4694-A62F-08320A47922E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2ECFA527-241C-4694-A62F-08320A47922E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2ECFA527-241C-4694-A62F-08320A47922E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
