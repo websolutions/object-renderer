@@ -66,7 +66,9 @@
   <ItemGroup>
     <None Include="AutoVersion.config" />
     <None Include="packages.config" />
-    <None Include="Web.config.install.xdt" />
+    <None Include="Web.config.install.xdt">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Web.config.uninstall.xdt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

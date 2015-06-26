@@ -7,7 +7,7 @@
 
     public delegate TemplateDescriptorAttribute TemplateResolverHandler(TemplateDescriptorAttribute T, string[] Tags, object Item);
 
-    public delegate HtmlGenericControl InsertWrapperHandler(HtmlGenericControl Wrapper, object Item);
+    public delegate Control InsertWrapperHandler(HtmlGenericControl Wrapper, object Item);
 
     public delegate void NullContentHandler(HtmlTextWriter writer);
 

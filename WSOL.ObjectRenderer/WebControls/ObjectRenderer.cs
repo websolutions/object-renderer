@@ -150,13 +150,14 @@
 
             if (items == null || !items.Any())
             {
-                sb.AppendLine("IContent Items: Null or Empty!");
+                sb.AppendLine("Items: Null or Empty!");
             }
             else
             {
-                sb.AppendLine("IContent Item Count: " + items.Count);
+                sb.AppendLine("Item Count: " + items.Count);
+                sb.AppendLine("Null Item Count: " + (ItemList != null ? ItemList.Where(x => x == null).Count() : 0));
                 sb.AppendLine(_RenderedCount + " items rendered of " + items.Count);
-                sb.AppendLine("If rendered count is lower than item count, then check if tags are required of content is set as back-end in the content descriptor attribute");
+                sb.AppendLine("If rendered count is lower than item count, then check if tags are required, the items is not null, and if the item implements IRendererItemDisplay it returns as expected.");
 
                 foreach (var item in items)
                 {
@@ -397,18 +398,26 @@
                     // Add control to renderer
                     if (c != null)
                     {
-                        if (InsertItemWrapper != null)
-                        {
-                            wrapper = InsertItemWrapper(wrapper, item);
-                        }
+                        bool controlAdded = false;
 
                         if (wrapper != null)
                         {
                             wrapper.Controls.Add(c);
+                            Control ctl = wrapper;
 
-                            this.Controls.Add(wrapper);
+                            if (InsertItemWrapper != null)
+                            {
+                                ctl = InsertItemWrapper(wrapper, item);
+                            }
+
+                            if (ctl != null)
+                            {
+                                this.Controls.Add(ctl);
+                                controlAdded = true;
+                            }
                         }
-                        else
+
+                        if (!controlAdded)
                         {
                             this.Controls.Add(c);
                         }
