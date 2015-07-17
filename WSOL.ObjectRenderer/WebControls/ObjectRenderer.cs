@@ -373,7 +373,7 @@
 
                         case TemplateType.XSLT:
                             ICacheKey cacheableItem = item as ICacheKey;
-                            string xml = _XmlSerializer.Serialize(data: Item, additionalTypes: t.AdditionalTypes);
+                            string xml = _XmlSerializer.Serialize(data: item, additionalTypes: t.AdditionalTypes);
 
                             c = new LiteralControl(
                                 _XsltTransformer.Transform(
