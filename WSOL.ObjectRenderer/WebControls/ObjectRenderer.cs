@@ -380,7 +380,7 @@
                                     xml: xml,
                                     xslt: t.Path,
                                     cacheKey:
-                                        string.Format("WSOL:Cache:ObjectRenderer:Type={0},Tags={1},Path={2},Variant={4}", item.GetType().FullName, string.Join(",", Tags), t.Path, cacheableItem != null ? cacheableItem.CacheKey : string.Empty),
+                                        string.Format("WSOL:Cache:ObjectRenderer:Type={0},Tags={1},Path={2},Variant={3}", item.GetType().FullName, string.Join(",", Tags), t.Path, cacheableItem != null ? cacheableItem.CacheKey : string.Empty),
                                     cacheInterval: (cacheableItem != null) ? CacheInterval : 0,
                                     returnExceptionMessage: ShowXsltErrors
                                 )
