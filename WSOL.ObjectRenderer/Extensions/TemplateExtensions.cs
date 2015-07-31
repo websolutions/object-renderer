@@ -203,10 +203,9 @@
         /// Resolution engine for models to find the appropriate render
         /// </summary>
         /// <param name="T"></param>
-        /// <param name="OnResolved"></param>
         /// <param name="Tags"></param>
         /// <returns>resolved TemplateDescriptorAttribute or null</returns>
-        internal static TemplateDescriptorAttribute ResolveTemplate(this Type T, TemplateResolverHandler OnResolved, string[] Tags, object Item)
+        internal static TemplateDescriptorAttribute ResolveTemplate(this Type T, string[] Tags, object Item)
         {
             TemplateDescriptorAttribute descriptor = null;
 
@@ -435,12 +434,6 @@
                         null
                     );
                 }
-            }
-
-            // Allows a developer to change the resolved template descriptor.
-            if (OnResolved != null)
-            {
-                descriptor = OnResolved(descriptor, Tags, Item);
             }
 
             return descriptor;

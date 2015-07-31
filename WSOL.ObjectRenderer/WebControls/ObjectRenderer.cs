@@ -125,6 +125,30 @@
 
         #endregion Properties
 
+        #region Global Properties
+
+        /// <summary>
+        /// Executes if DebugMode is true
+        /// </summary>
+        public static event DebugContentHandler GlobalDebugWrite;
+
+        /// <summary>
+        /// Executes when an item wrapper is specified and added to the renderer
+        /// </summary>
+        public static event InsertWrapperHandler GlobalInsertItemWrapper;
+
+        /// <summary>
+        /// Executes after the template has been looked up.
+        /// </summary>
+        public static event TemplateResolverHandler GlobalTemplateResolved;
+
+        /// <summary>
+        /// If true, executes DebugContentHandler to write out debug information
+        /// </summary>
+        public static bool GlobalDebugMode { get; set; }
+
+        #endregion
+
         #region Methods
 
         /// <summary>
@@ -228,6 +252,26 @@
             }
         }
 
+        public override string ToString()
+        {
+            StringBuilder sBuilder = new StringBuilder(200);
+
+            if(!_Executed)
+            {
+                BuildRenderer();
+            }
+
+            using (StringWriter sWriter = new StringWriter(sBuilder))
+            {
+                using (HtmlTextWriter hWriter = new HtmlTextWriter(sWriter))
+                {
+                    this.RenderControl(hWriter);
+                }
+            }
+
+            return sBuilder.ToString();
+        }
+
         protected override void OnDataBinding(EventArgs e)
         {
             base.OnDataBinding(e);
@@ -269,21 +313,6 @@
             base.Render(writer);
         }
 
-        public override string ToString()
-        {
-            StringBuilder sBuilder = new StringBuilder(200);
-
-            using (StringWriter sWriter = new StringWriter(sBuilder))
-            {
-                using (HtmlTextWriter hWriter = new HtmlTextWriter(sWriter))
-                {
-                    this.RenderControl(hWriter);
-                }
-            }            
-
-            return sBuilder.ToString();
-        }
-
         /// <summary>
         /// Checked during several events of the page life cycle, Ideally should be one OnLoad or OnInit if form elements are used.
         /// </summary>
@@ -309,12 +338,14 @@
             // stores item for debug write
             Dictionary<object, TemplateDescriptorAttribute> debugItems = null;
 
+            bool isDebug = GlobalDebugMode || DebugMode;
+
             if (ItemList.Any())
             {
                 // Keeps from executing several times in page life cycle
-                _Executed = true;
+                _Executed = true;                
 
-                if (DebugMode)
+                if (isDebug)
                     debugItems = new Dictionary<object, TemplateDescriptorAttribute>();
 
                 // Control to be loaded
@@ -338,9 +369,21 @@
                         wrapper = new HtmlGenericControl() { TagName = ItemWrapTag };
                     }
 
-                    TemplateDescriptorAttribute t = contentType.ResolveTemplate(TemplateResolved, Tags, item);
+                    TemplateDescriptorAttribute t = contentType.ResolveTemplate(Tags, item);
 
-                    if (DebugMode)
+                    // Allow for global template resolved checks
+                    if (GlobalTemplateResolved != null)
+                    {
+                        t = GlobalTemplateResolved(t, Tags, item);
+                    }
+
+                    // Allows a developer to change the resolved template descriptor.
+                    if (TemplateResolved != null)
+                    {
+                        t = TemplateResolved(t, Tags, Item);
+                    }
+
+                    if (isDebug)
                     {
                         debugItems.Add(item, t);
                     }
@@ -398,26 +441,29 @@
                     // Add control to renderer
                     if (c != null)
                     {
-                        bool controlAdded = false;
+                        Control ctl = wrapper;
 
+                        // add control to wrapper so they are accessible in events
                         if (wrapper != null)
                         {
                             wrapper.Controls.Add(c);
-                            Control ctl = wrapper;
-
-                            if (InsertItemWrapper != null)
-                            {
-                                ctl = InsertItemWrapper(wrapper, item);
-                            }
-
-                            if (ctl != null)
-                            {
-                                this.Controls.Add(ctl);
-                                controlAdded = true;
-                            }
                         }
 
-                        if (!controlAdded)
+                        if (GlobalInsertItemWrapper != null)
+                        {
+                            ctl = GlobalInsertItemWrapper(wrapper ?? c, item);
+                        }
+
+                        if (InsertItemWrapper != null)
+                        {
+                            ctl = InsertItemWrapper(wrapper ?? c, item);
+                        }
+
+                        if (ctl != null)
+                        {
+                            this.Controls.Add(ctl);
+                        }
+                        else
                         {
                             this.Controls.Add(c);
                         }
@@ -427,12 +473,17 @@
                 }
             }
 
-            if (DebugMode)
+            if (isDebug)
             {
                 string output = string.Empty;
 
                 if (DebugWrite == null)
-                    DebugWrite += Default_DebugWrite;
+                {
+                    if (GlobalDebugWrite == null)
+                        DebugWrite += Default_DebugWrite;
+                    else
+                        DebugWrite += GlobalDebugWrite;
+                }
 
                 output += DebugWrite(debugItems, Tags);
 
