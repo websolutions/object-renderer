@@ -358,34 +358,34 @@
                     Tags = new string[] { };
 
                 // Render each item that isn't null
-                foreach (object item in ItemList.Where(x => x != null))
+                foreach (object o in ItemList.Where(x => x != null))
                 {
                     HtmlGenericControl wrapper = null;
-                    Type contentType = item.GetType();
-                    IRendererItemDisplay displayableItem = item as IRendererItemDisplay;
+                    Type contentType = o.GetType();
+                    IRendererItemDisplay displayableItem = o as IRendererItemDisplay;
 
                     if (!string.IsNullOrEmpty(ItemWrapTag))
                     {
                         wrapper = new HtmlGenericControl() { TagName = ItemWrapTag };
                     }
 
-                    TemplateDescriptorAttribute t = contentType.ResolveTemplate(Tags, item);
+                    TemplateDescriptorAttribute t = contentType.ResolveTemplate(Tags, o);
 
                     // Allow for global template resolved checks
                     if (GlobalTemplateResolved != null)
                     {
-                        t = GlobalTemplateResolved(t, Tags, item);
+                        t = GlobalTemplateResolved(t, Tags, o);
                     }
 
                     // Allows a developer to change the resolved template descriptor.
                     if (TemplateResolved != null)
                     {
-                        t = TemplateResolved(t, Tags, Item);
+                        t = TemplateResolved(t, Tags, o);
                     }
 
                     if (isDebug)
                     {
-                        debugItems.Add(item, t);
+                        debugItems.Add(o, t);
                     }
 
                     // If no template or not displayable determined by IRendererItemDisplay
@@ -415,15 +415,15 @@
                         //    break;
 
                         case TemplateType.XSLT:
-                            ICacheKey cacheableItem = item as ICacheKey;
-                            string xml = _XmlSerializer.Serialize(data: item, additionalTypes: t.AdditionalTypes);
+                            ICacheKey cacheableItem = o as ICacheKey;
+                            string xml = _XmlSerializer.Serialize(data: o, additionalTypes: t.AdditionalTypes);
 
                             c = new LiteralControl(
                                 _XsltTransformer.Transform(
                                     xml: xml,
                                     xslt: t.Path,
                                     cacheKey:
-                                        string.Format("WSOL:Cache:ObjectRenderer:Type={0},Tags={1},Path={2},Variant={3}", item.GetType().FullName, string.Join(",", Tags), t.Path, cacheableItem != null ? cacheableItem.CacheKey : string.Empty),
+                                        string.Format("WSOL:Cache:ObjectRenderer:Type={0},Tags={1},Path={2},Variant={3}", o.GetType().FullName, string.Join(",", Tags), t.Path, cacheableItem != null ? cacheableItem.CacheKey : string.Empty),
                                     cacheInterval: (cacheableItem != null) ? CacheInterval : 0,
                                     returnExceptionMessage: ShowXsltErrors
                                 )
@@ -433,7 +433,7 @@
 
                         case TemplateType.UserControl:
                         default:
-                            c = t.Path.Load(item);
+                            c = t.Path.Load(o);
 
                             break;
                     }
@@ -451,12 +451,12 @@
 
                         if (GlobalInsertItemWrapper != null)
                         {
-                            ctl = GlobalInsertItemWrapper(wrapper ?? c, item);
+                            ctl = GlobalInsertItemWrapper(wrapper ?? c, o);
                         }
 
                         if (InsertItemWrapper != null)
                         {
-                            ctl = InsertItemWrapper(wrapper ?? c, item);
+                            ctl = InsertItemWrapper(wrapper ?? c, o);
                         }
 
                         if (ctl != null)
