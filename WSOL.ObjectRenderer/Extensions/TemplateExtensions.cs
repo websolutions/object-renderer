@@ -209,92 +209,45 @@
         {
             TemplateDescriptorAttribute descriptor = null;
 
-            if (Tags == null)
+            try
             {
-                Tags = new string[] { };
-            }
-
-            CustomTuple<Type, string> tuple = CustomTuple.Create(T, string.Join(",", Tags));
-
-            if (!_ResolvedTemplates.TryGetValue(tuple, out descriptor))
-            {
-                BuildDescriptorList(false);
-
-                if (_TemplateDescriptorList != null && _TemplateDescriptorList.Count > 0)
+                if (Tags == null)
                 {
-                    // Only get the base Types that have descriptors
-                    IEnumerable<Type> baseTypes = T.GetBaseTypes().Intersect(_TemplateDescriptorList.Select(x => x.ModelType));
+                    Tags = new string[] { };
+                }
 
-                    lock (_Lock)
+                CustomTuple<Type, string> tuple = CustomTuple.Create(T, string.Join(",", Tags));
+
+                if (!_ResolvedTemplates.TryGetValue(tuple, out descriptor))
+                {
+                    BuildDescriptorList(false);
+
+                    if (_TemplateDescriptorList != null && _TemplateDescriptorList.Count > 0)
                     {
-                        // Check tags
-                        if (Tags != null && Tags.Length > 0)
+                        // Only get the base Types that have descriptors
+                        IEnumerable<Type> baseTypes = T.GetBaseTypes().Intersect(_TemplateDescriptorList.Select(x => x.ModelType));
+
+                        lock (_Lock)
                         {
-                            var matches = _TemplateDescriptorList.Where(x => x.Tags.Any(y => Tags.Contains(y)));
-
-                            if (matches.Any())
+                            // Check tags
+                            if (Tags != null && Tags.Length > 0)
                             {
-                                // Get the highest number of matches
-                                var counts = (from x in matches select new { Frequency = x.Tags.Count(y => Tags.Contains(y)), Descriptor = x })
-                                    .OrderByDescending(x => x.Frequency).ThenByDescending(x => x.Descriptor.Default);
+                                var matches = _TemplateDescriptorList.Where(x => x.Tags.Any(y => Tags.Contains(y)));
 
-                                #region Required Tags
-
-                                // Check type
-                                var typecheck = counts.Where(x => x.Descriptor.ModelType == T && x.Descriptor.RequireTags);//.OrderBy(x => x.Descriptor.Path);
-
-                                if (typecheck.Any())
+                                if (matches.Any())
                                 {
-                                    var defaultCheck = typecheck.Where(x => x.Descriptor.Default).FirstOrDefault();
+                                    // Get the highest number of matches
+                                    var counts = (from x in matches select new { Frequency = x.Tags.Count(y => Tags.Contains(y)), Descriptor = x })
+                                        .OrderByDescending(x => x.Frequency).ThenByDescending(x => x.Descriptor.Default);
 
-                                    if (defaultCheck != null) // defaults should win
-                                    {
-                                        descriptor = defaultCheck.Descriptor;
-                                    }
-                                    else
-                                    {
-                                        descriptor = typecheck.First().Descriptor;
-                                    }
-                                }
-                                else
-                                {
-                                    // Inheritance check, pushing require tags to top
-                                    var inheritanceCheck = counts.Where(x => x.Descriptor.Inherited && x.Descriptor.RequireTags && x.Descriptor.ModelType.IsAssignableFrom(T));
-
-                                    if (inheritanceCheck.Any())
-                                    {
-                                        var defaultCheck = inheritanceCheck.Where(x => x.Descriptor.Default);
-
-                                        if (defaultCheck.Any()) // defaults should win
-                                        {
-                                            // check baseTypes against ModelType, sort by baseTypes order
-                                            var orderedTypes = from type in baseTypes join item in defaultCheck on type equals item.Descriptor.ModelType select item;
-                                            descriptor = orderedTypes.First().Descriptor;
-                                        }
-                                        else
-                                        {
-                                            var orderedTypes = from type in baseTypes join item in inheritanceCheck on type equals item.Descriptor.ModelType select item;
-                                            descriptor = orderedTypes.First().Descriptor;
-                                        }
-                                    }
-                                }
-
-                                #endregion Required Tags
-
-                                #region Non Required Tags
-
-                                // Check for non required tags
-                                if (descriptor == null)
-                                {
-                                    // Only look at descriptors with no required tags
-                                    var noRequiredTags = counts.Where(x => !x.Descriptor.RequireTags).OrderBy(x => x.Descriptor.Path);
+                                    #region Required Tags
 
                                     // Check type
-                                    var typecheck2 = noRequiredTags.Where(x => x.Descriptor.ModelType == T);
+                                    var typecheck = counts.Where(x => x.Descriptor.ModelType == T && x.Descriptor.RequireTags);//.OrderBy(x => x.Descriptor.Path);
 
-                                    if (typecheck2.Any())
+                                    if (typecheck.Any())
                                     {
-                                        var defaultCheck = typecheck2.Where(x => x.Descriptor.Default).OrderBy(x => x.Descriptor.Path).FirstOrDefault();
+                                        var defaultCheck = typecheck.Where(x => x.Descriptor.Default).FirstOrDefault();
 
                                         if (defaultCheck != null) // defaults should win
                                         {
@@ -302,13 +255,13 @@
                                         }
                                         else
                                         {
-                                            descriptor = typecheck2.First().Descriptor;
+                                            descriptor = typecheck.First().Descriptor;
                                         }
                                     }
                                     else
                                     {
-                                        // Inheritance check
-                                        var inheritanceCheck = noRequiredTags.Where(x => x.Descriptor.Inherited && x.Descriptor.ModelType.IsAssignableFrom(T));
+                                        // Inheritance check, pushing require tags to top
+                                        var inheritanceCheck = counts.Where(x => x.Descriptor.Inherited && x.Descriptor.RequireTags && x.Descriptor.ModelType.IsAssignableFrom(T));
 
                                         if (inheritanceCheck.Any())
                                         {
@@ -316,6 +269,7 @@
 
                                             if (defaultCheck.Any()) // defaults should win
                                             {
+                                                // check baseTypes against ModelType, sort by baseTypes order
                                                 var orderedTypes = from type in baseTypes join item in defaultCheck on type equals item.Descriptor.ModelType select item;
                                                 descriptor = orderedTypes.First().Descriptor;
                                             }
@@ -326,98 +280,163 @@
                                             }
                                         }
                                     }
+
+                                    #endregion Required Tags
+
+                                    #region Non Required Tags
+
+                                    // Check for non required tags
+                                    if (descriptor == null)
+                                    {
+                                        // Only look at descriptors with no required tags
+                                        var noRequiredTags = counts.Where(x => !x.Descriptor.RequireTags).OrderBy(x => x.Descriptor.Path);
+
+                                        // Check type
+                                        var typecheck2 = noRequiredTags.Where(x => x.Descriptor.ModelType == T);
+
+                                        if (typecheck2.Any())
+                                        {
+                                            var defaultCheck = typecheck2.Where(x => x.Descriptor.Default).OrderBy(x => x.Descriptor.Path).FirstOrDefault();
+
+                                            if (defaultCheck != null) // defaults should win
+                                            {
+                                                descriptor = defaultCheck.Descriptor;
+                                            }
+                                            else
+                                            {
+                                                descriptor = typecheck2.First().Descriptor;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Inheritance check
+                                            var inheritanceCheck = noRequiredTags.Where(x => x.Descriptor.Inherited && x.Descriptor.ModelType.IsAssignableFrom(T));
+
+                                            if (inheritanceCheck.Any())
+                                            {
+                                                var defaultCheck = inheritanceCheck.Where(x => x.Descriptor.Default);
+
+                                                if (defaultCheck.Any()) // defaults should win
+                                                {
+                                                    var orderedTypes = from type in baseTypes join item in defaultCheck on type equals item.Descriptor.ModelType select item;
+                                                    descriptor = orderedTypes.First().Descriptor;
+                                                }
+                                                else
+                                                {
+                                                    var orderedTypes = from type in baseTypes join item in inheritanceCheck on type equals item.Descriptor.ModelType select item;
+                                                    descriptor = orderedTypes.First().Descriptor;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    #endregion Non Required Tags
                                 }
-
-                                #endregion Non Required Tags
                             }
-                        }
 
-                        #region Default Check
+                            #region Default Check
 
-                        if (descriptor == null)
-                        {
-                            var matches = _TemplateDescriptorList.Where(x => x.Default).OrderBy(x => x.Path);
-
-                            if (matches.Any())
+                            if (descriptor == null)
                             {
-                                // Check type
-                                var typecheck = matches.Where(x => x.ModelType == T).FirstOrDefault();
+                                var matches = _TemplateDescriptorList.Where(x => x.Default).OrderBy(x => x.Path);
 
-                                if (typecheck != null)
+                                if (matches.Any())
                                 {
-                                    descriptor = typecheck;
+                                    // Check type
+                                    var typecheck = matches.Where(x => x.ModelType == T).FirstOrDefault();
+
+                                    if (typecheck != null)
+                                    {
+                                        descriptor = typecheck;
+                                    }
+                                    else
+                                    {
+                                        // Inheritance check
+                                        var inheritanceCheck = matches.Where(x => x.Inherited && x.ModelType.IsAssignableFrom(T));
+
+                                        if (inheritanceCheck.Any())
+                                        {
+                                            var orderedTypes = from type in baseTypes join item in inheritanceCheck on type equals item.ModelType select item;
+                                            descriptor = inheritanceCheck.First();
+                                        }
+                                    }
+                                }
+                            }
+
+                            #endregion Default Check
+
+                            #region Non Required Tags, final check if no defaults are located.
+
+                            // Check for non required tags
+                            if (descriptor == null)
+                            {
+                                // Only look at descriptors with no required tags
+                                var noRequiredTags = _TemplateDescriptorList.Where(x => !x.RequireTags).OrderBy(x => x.Path);
+
+                                // Check type
+                                var typecheck = noRequiredTags.Where(x => x.ModelType == T);
+
+                                if (typecheck.Any())
+                                {
+                                    var defaultCheck = typecheck.Where(x => x.Default).FirstOrDefault();
+
+                                    if (defaultCheck != null) // defaults should win
+                                    {
+                                        descriptor = defaultCheck;
+                                    }
+                                    else
+                                    {
+                                        descriptor = typecheck.First();
+                                    }
                                 }
                                 else
                                 {
                                     // Inheritance check
-                                    var inheritanceCheck = matches.Where(x => x.Inherited && x.ModelType.IsAssignableFrom(T));
+                                    var inheritanceCheck = noRequiredTags.Where(x => x.Inherited && x.ModelType.IsAssignableFrom(T));
 
                                     if (inheritanceCheck.Any())
                                     {
-                                        var orderedTypes = from type in baseTypes join item in inheritanceCheck on type equals item.ModelType select item;
-                                        descriptor = inheritanceCheck.First();
+                                        var defaultCheck = inheritanceCheck.Where(x => x.Default);
+
+                                        if (defaultCheck.Any()) // defaults should win
+                                        {
+                                            var orderedTypes = from type in baseTypes join item in defaultCheck on type equals item.ModelType select item;
+                                            descriptor = orderedTypes.First();
+                                        }
+                                        else
+                                        {
+                                            var orderedTypes = from type in baseTypes join item in inheritanceCheck on type equals item.ModelType select item;
+                                            descriptor = inheritanceCheck.First();
+                                        }
                                     }
                                 }
                             }
+
+                            #endregion Non Required Tags, final check if no defaults are located.
                         }
 
-                        #endregion Default Check
-
-                        #region Non Required Tags, final check if no defaults are located.
-
-                        // Check for non required tags
-                        if (descriptor == null)
+                        // Add to dictionary for quicker lookups
+                        if (descriptor != null)
                         {
-                            // Only look at descriptors with no required tags
-                            var noRequiredTags = _TemplateDescriptorList.Where(x => !x.RequireTags).OrderBy(x => x.Path);
-
-                            // Check type
-                            var typecheck = noRequiredTags.Where(x => x.ModelType == T);
-
-                            if (typecheck.Any())
-                            {
-                                var defaultCheck = typecheck.Where(x => x.Default).FirstOrDefault();
-
-                                if (defaultCheck != null) // defaults should win
-                                {
-                                    descriptor = defaultCheck;
-                                }
-                                else
-                                {
-                                    descriptor = typecheck.First();
-                                }
-                            }
-                            else
-                            {
-                                // Inheritance check
-                                var inheritanceCheck = noRequiredTags.Where(x => x.Inherited && x.ModelType.IsAssignableFrom(T));
-
-                                if (inheritanceCheck.Any())
-                                {
-                                    var defaultCheck = inheritanceCheck.Where(x => x.Default);
-
-                                    if (defaultCheck.Any()) // defaults should win
-                                    {
-                                        var orderedTypes = from type in baseTypes join item in defaultCheck on type equals item.ModelType select item;
-                                        descriptor = orderedTypes.First();
-                                    }
-                                    else
-                                    {
-                                        var orderedTypes = from type in baseTypes join item in inheritanceCheck on type equals item.ModelType select item;
-                                        descriptor = inheritanceCheck.First();
-                                    }
-                                }
-                            }
+                            _ResolvedTemplates.Add(tuple, descriptor);
                         }
-
-                        #endregion Non Required Tags, final check if no defaults are located.
                     }
+                }
+            }
+            catch (Exception e)
+            {
+                if (_Logger != null)
+                {
+                    string itemType = Item == null ? "null item" : Item.GetType().FullName;
 
-                    // Add to dictionary for quicker lookups
-                    if (descriptor != null)
-                    {
-                        _ResolvedTemplates.Add(tuple, descriptor);
-                    }
+                    _Logger.Log
+                    (
+                        $"Unable to resolve template for {T.FullName} with object {itemType}",
+                        typeof(TemplateExtensions).FullName,
+                        e,
+                        System.Diagnostics.EventLogEntryType.Error,
+                        descriptor
+                    );
                 }
             }
 
@@ -425,9 +444,17 @@
             {
                 if (_Logger != null)
                 {
+                    string nullWarning = "Null template descriptor found, dictionary had following types defined ";
+
+                    try
+                    {
+                        nullWarning += string.Join(",", _ResolvedTemplates.Select(x => x.Key.Item1.FullName).ToArray());
+                    }
+                    catch { }
+
                     _Logger.Log
                     (
-                        "Null template descriptor found, dictionary had following types defined " + string.Join(",", _ResolvedTemplates.Select(x => x.Key.Item1.FullName).ToArray()),
+                        nullWarning,
                         typeof(TemplateExtensions).FullName,
                         null,
                         System.Diagnostics.EventLogEntryType.Warning,
