@@ -96,10 +96,7 @@
 
                     foreach (var file in files)
                     {
-                        compiledType = BuildManager.GetCompiledType(_ApplicationHelper.MapPathReverse(file));
-
-                        if (compiledType != null && compiledType.BaseType != null)
-                            descriptor = compiledType.BaseType.AddTemplateDescriptor(replace: replace);
+                        compiledType = CompileView(replace, ref descriptor, _ApplicationHelper.MapPathReverse(file));
                     }
                 }
                 else
@@ -110,10 +107,7 @@
 
                         if (file.EndsWith(".ascx", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            compiledType = BuildManager.GetCompiledType(file);
-
-                            if (compiledType != null && compiledType.BaseType != null)
-                                descriptor = compiledType.BaseType.AddTemplateDescriptor(replace: replace);
+                            compiledType = CompileView(replace, ref descriptor, file);
                         }
 
                         rebuildList = descriptor == null;
@@ -128,6 +122,26 @@
                 ViewWatcher.EnableRaisingEvents = true; // re-enable watcher after its completed
 
             IsBuilding = false;
+        }
+
+        private static Type CompileView(bool replace, ref TemplateDescriptorAttribute descriptor, string file)
+        {
+            Type compiledType = null;
+            try
+            {
+                // should keep all views from getting destroyed if one cannot compile
+                compiledType = BuildManager.GetCompiledType(file);
+            }
+            catch(Exception e)
+            {
+                var logger = InitializationContext.Locator.Get<ILogger>();
+                logger?.Log($"Failed to compile {file}!", nameof(CompileView), e, System.Diagnostics.EventLogEntryType.Error, null);
+            }
+
+            if (compiledType?.BaseType != null)
+                descriptor = compiledType.BaseType.AddTemplateDescriptor(replace: replace);
+
+            return compiledType;
         }
 
         private static string TrimEnd(string source, string value)

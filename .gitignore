@@ -160,3 +160,4 @@ GeneratedAssemblyInfo.cs
 /WSOL.EktronCms.ContentMaker/content
 
 .vs/
+*.nupkg
